@@ -1,3 +1,6 @@
 secrets.py
+credentials.json
 **/__pycache__/*
 .vscode/*
+token.pickle
+.DS_Store
