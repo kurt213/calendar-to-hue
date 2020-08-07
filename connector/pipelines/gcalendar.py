@@ -3,7 +3,7 @@ if __name__ == '__main__' and __package__ is None:
     from os import path
     sys.path.append( path.dirname( path.dirname (path.dirname( path.abspath(__file__) ) ) ))
 
-import datetime
+from datetime import datetime, timedelta
 import pickle
 import os.path
 import inspect
@@ -17,9 +17,11 @@ from connector.access import secrets
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 
-def main():
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
+def get_today_events():
+    """ Get today's confirmed events
+
+    Get today's calendar events to add into schedule
+    
     """
 
     access_name = 'credentials.json'
@@ -27,6 +29,7 @@ def main():
     access_json = os.path.join(access_path, access_name)
 
     creds = None
+
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
@@ -48,19 +51,35 @@ def main():
     service = build('calendar', 'v3', credentials=creds)
 
     # Call the Calendar API
-    now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-    print('Getting the upcoming 10 events')
-    events_result = service.events().list(calendarId='primary', timeMin=now,
+    today = datetime.utcnow().date()
+    tomorrow = today + timedelta(1)
+    start = datetime(today.year, today.month, today.day, 0, 0).isoformat() + 'Z'
+    end = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0).isoformat() + 'Z'
+    print("Getting today's events")
+
+    events_result = service.events().list(calendarId='primary', timeMin=start, timeMax=end,
                                         maxResults=10, singleEvents=True,
                                         orderBy='startTime').execute()
     events = events_result.get('items', [])
 
     if not events:
-        print('No upcoming events found.')
+        print('No events for today found.')
+    
+    event_list = []
     for event in events:
         start = event['start'].get('dateTime', event['start'].get('date'))
-        print(start, event['summary'])
+        #start_convert = datetime.strptime(start, '%Y-%m-%dT%H:%M:%S%z')
+        #print(start_convert)
+        event_list.append({
+            'start_time': start,
+            'event_name': event['summary'],
+            'status': event['status']
+        })
 
+    return event_list
 
 if __name__ == '__main__':
-    main()
+    
+    events = get_today_events()
+    print(events)
+
