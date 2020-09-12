@@ -68,10 +68,12 @@ def get_today_events():
     event_list = []
     for event in events:
         start = event['start'].get('dateTime', event['start'].get('date'))
+        end = event['end'].get('dateTime', event['end'].get('date'))
         #start_convert = datetime.strptime(start, '%Y-%m-%dT%H:%M:%S%z')
         #print(start_convert)
         event_list.append({
             'start_time': start,
+            'end_time': end,
             'event_name': event['summary'],
             'status': event['status']
         })

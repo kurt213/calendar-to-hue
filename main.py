@@ -14,10 +14,12 @@ def main():
 
     # Connect to Hue lighting system
     hue_control = hue.HueControl()
-    groups_data = hue_control.get_groups_data()
-    group_selected = hue_control.select_group('All Lights')
+    #groups_data = hue_control.get_groups_data()
+    #group_selected = hue_control.select_group('All Lights')
+    hue_control.get_lights_data()
+    light_selected = hue_control.select_light('Study light')
 
-    if group_selected:
+    if light_selected:
         hue_control.switch_light('on', True)
 
 if __name__ == '__main__':

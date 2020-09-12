@@ -12,28 +12,60 @@ if __name__ == '__main__' and __package__ is None:
     sys.path.append( path.dirname( path.dirname (path.dirname( path.abspath(__file__) ) ) ))
     from connector.pipelines.hue import HueControl
 
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 import time
 from datetime import datetime
 
 class Schedule:
 
-    def __init__(self):
+    def __init__(self, cal_events):
 
-        self.scheduler = BlockingScheduler()
+        self.sched = BackgroundScheduler(daemon=True)
+        self.gcalendar_events = cal_events
 
-    def string_to_datetime(self, input_string):
+    def current_jobs(self):
 
-        output_date = datetime.strptime(input_string, '%Y-%m-%dT%H:%M:%S%z')
-        return output_date
+        print(self.gcalendar_events)
+        print(self.sched.get_jobs())
+
+    def add_start_events(self, start_function):
+
+        for i in self.gcalendar_events:
+
+            self.sched.add_job(start_function, 'date', run_date=i['start_time'])
+
+    def add_end_events(self, end_function):
+
+        print('end function here')
+
+    def start_scheduler(self):
+
+        self.sched.start()
+            
 
 if __name__ == '__main__':
 
-    scheduler = BlockingScheduler()
-    hue = HueControl()
-    hue.get_lights_data()
-    light_selected = hue.select_light('Study light')
+    gcalendar_events = [
+        {'start_time': '2020-09-13T15:45:00+01:00', 
+        'end_time': '2020-09-13T16:30:00+01:00', 
+        'event_name': 'Weekly Connect', 
+        'status': 'confirmed'}, 
+        {'start_time': '2020-09-13T19:30:00+01:00', 
+        'end_time': '2020-09-13T20:30:00+01:00', 
+        'event_name': 'Torchlight', 
+        'status': 'confirmed'}
+    ]
 
+    hue = HueControl()
+    hue.get_lights()
+    light_selected = hue.select_lights('Study light', 'light')
+
+    sched = Schedule(gcalendar_events)
+    sched.add_start_events(hue.switch_lights)
+    sched.start_scheduler()
+    sched.current_jobs()
+
+    """
     def job_1():
 
         print('hello this is job 1')
@@ -61,3 +93,4 @@ if __name__ == '__main__':
     #scheduler.add_job(hue.switch_light, 'interval', id='test1', seconds=10)
 
     #scheduler.start()
+    """

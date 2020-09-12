@@ -21,28 +21,38 @@ class HueControl:
 
         self.hue_user = secrets.hue_user
 
-        get_lights = "http://{}/api/{}/lights".format(self.ip_address, self.hue_user)
-        self.get_lights_response = requests.get(get_lights)
+        lights_request = "http://{}/api/{}/lights".format(self.ip_address, self.hue_user)
+        self.get_lights_response = requests.get(lights_request)
 
-        get_groups = "http://{}/api/{}/groups".format(self.ip_address, self.hue_user)
-        self.get_groups_response = requests.get(get_groups)
+        groups_request = "http://{}/api/{}/groups".format(self.ip_address, self.hue_user)
+        self.get_groups_response = requests.get(groups_request)
 
-    def lights_raw_data(self):
+        self.get_lights()
 
-        raw_lights_json = self.get_lights_response.content
-        parsed_lights_json = json.loads(raw_lights_json)
-        print(json.dumps(parsed_lights_json, indent=2, sort_keys=True))
+    def show_raw_data(self, light_or_group):
 
-    def groups_raw_date(self):
+        if light_or_group == 'light':
 
-        raw_groups_json = self.get_groups_response.content
-        parsed_groups_json = json.loads(raw_groups_json)
-        print(json.dumps(parsed_groups_json, indent=2, sort_keys=True))        
+            raw_lights_json = self.get_lights_response.content
+            parsed_lights_json = json.loads(raw_lights_json)
+            print(json.dumps(parsed_lights_json, indent=2, sort_keys=True))
 
-    def get_lights_data(self):
+        elif light_or_group == 'group':
+
+            raw_groups_json = self.get_groups_response.content
+            parsed_groups_json = json.loads(raw_groups_json)
+            print(json.dumps(parsed_groups_json, indent=2, sort_keys=True))
+
+        else:
+
+            print("'light' or 'group' not selected")
+
+    def get_lights(self):
 
         lights_json = json.loads(self.get_lights_response.content)
+        groups_json = json.loads(self.get_groups_response.content)
         self.lights_list = []
+        self.groups_list = []
 
         for l_id, l in lights_json.items():
             lights_dict = {
@@ -53,14 +63,6 @@ class HueControl:
             combined_dict = dict(**lights_dict, **state_dict)
             self.lights_list.append(combined_dict)
 
-        #print(self.lights_list)
-        return self.lights_list
-
-    def get_groups_data(self):
-
-        groups_json = json.loads(self.get_groups_response.content)
-        self.groups_list = []
-
         for g_id, g in groups_json.items():
             groups_dict = {
                 'id': g_id,
@@ -70,51 +72,59 @@ class HueControl:
             combined_dict = dict(**groups_dict, **state_dict)
             self.groups_list.append(combined_dict)
 
-        #print(self.lights_list)
-        return self.groups_list        
+        return self.lights_list, self.groups_list
 
-    def select_light(self, light_name):
+    def select_lights(self, light_group_name, light_or_group):
 
-        self.current_light = False
+        self.current_lights = False
 
-        for sl in self.lights_list:
-            if sl['name'] == light_name:
-                self.current_light = sl
-                break
-        
-        if self.current_light:
-            print('light selected')
-            return self.current_light
-        else:
-            print('light with provided name does not exist')
+        if light_or_group == 'light':
 
-    def select_group(self, group_name):
-
-        self.current_group = False
-
-        for sg in self.groups_list:
-            if sg['name'] == group_name:
-                self.current_group = sg
-                break
-        
-        if self.current_group:
-            print('group selected')
-            return self.current_group
-        else:
-            print('group with provided name does not exist')        
-
-    def switch_light(self, target_state=False, all_lights=False):
-
-        if self.current_light:
-
-            if self.current_light['on']:
-                sl_command = 'false'
+            for sl in self.lights_list:
+                if sl['name'] == light_group_name:
+                    self.current_lights = sl
+                    break
+            if self.current_lights:
+                print('light selected')
+                self.light_or_group_url = 'lights'
+                # Used in request to check/switch single light on
+                self.switch_body_req = 'on'
+                self.state_action_req = 'state'
+                return self.current_lights
             else:
-                sl_command = 'true'
+                print('light with provided name does not exist')
 
-            current_light_id = self.current_light['id']
+        elif light_or_group == 'group':
 
-            sl_url = "http://{}/api/{}/lights/{}/state".format(self.ip_address, self.hue_user, current_light_id)
+            for sg in self.groups_list:
+                if sg['name'] == light_group_name:
+                    self.current_lights= sg
+                    break
+            if self.current_lights:
+                print('group selected')
+                self.light_or_group_url = 'groups'
+                # Used in request to check/switch single light on
+                self.switch_body_req = 'all_on'
+                self.state_action_req = 'action'
+                return self.current_lights
+            else:
+                print('group with provided name does not exist')                
+
+        else:
+            print("error: select 'light' or 'group'")    
+
+    def switch_lights(self):
+
+        if self.current_lights:
+
+            if self.current_lights[self.switch_body_req]:
+                sl_command='false'
+            else:
+                sl_command='true'
+
+            lights_id = self.current_lights['id']
+
+            sl_url = "http://{}/api/{}/{}/{}/{}".format(self.ip_address, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
             sl_body = '{"on":' + sl_command + '}'
             
             sl_response = requests.put(sl_url,
@@ -122,19 +132,19 @@ class HueControl:
             )
 
             if sl_response.ok:
-                print('light switched successfully')
+                print('lights switched successfully')
             else:
-                print('light switch failure')
+                print('lights switch failure')
 
         else:
-            print('light with provided name does not exist')
+            print('lights with provided name does not exist')
         
     def switch_colour(self, x, y):
 
-        if self.current_light:
+        if self.current_lights:
 
-            current_light_id = self.current_light['id']
-            lc_url = "http://{}/api/{}/lights/{}/state".format(self.ip_address, self.hue_user, current_light_id)
+            lights_id = self.current_lights['id']
+            lc_url = "http://{}/api/{}/{}/{}/{}".format(self.ip_address, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
             lc_body = '{"xy":[' + str(x) + ',' + str(y) + ']}'
             
             lc_response = requests.put(lc_url,
@@ -143,20 +153,21 @@ class HueControl:
         else:
             print('light with provided name does not exist')
 
-    def flash_light(self, number_flashes):
+    def flash_lights(self, number_flashes):
 
-        if self.current_light:
+        if self.current_lights:
 
-            if self.current_light['on']:
-                sl_command = 'false'
+            if self.current_lights[self.switch_body_req]:
+                sl_command='false'
             else:
-                sl_command = 'true'
+                sl_command='true'
 
             number_iterations = number_flashes * 2
 
             for i in range(number_iterations):
-                current_light_id = self.current_light['id']
-                sl_url = "http://{}/api/{}/lights/{}/state".format(self.ip_address, self.hue_user, current_light_id)
+
+                lights_id = self.current_lights['id']
+                sl_url = "http://{}/api/{}/{}/{}/{}".format(self.ip_address, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
                 sl_body = '{"on":' + sl_command + '}'
 
                 sl_response = requests.put(sl_url,
@@ -170,19 +181,24 @@ class HueControl:
 
                 time.sleep(2)
 
-""" Create separate class for setting up Hue
+    def meeting_start(self, light_group, switch_action, x, y, number_flashes=3):
 
-"""
+        print('meeting start combo functionality goes here')
+
 
 if __name__ == '__main__':
 
     hue = HueControl()
-    hue.get_lights_data()
-    light_selected = hue.select_light('Study light')
+    hue.get_lights()
+    lights_selected = hue.select_lights('Study light','light')
+    #lights_selected = hue.select_lights('All Lights', 'group')
 
-    if light_selected:
-        hue.switch_light('on')
-        hue.switch_colour(0.675, 0.322)
-        #hue.flash_light(3)
+    if lights_selected:
+        hue.switch_lights()
+        # red
+        #hue.switch_colour(0.675, 0.322)
+        # blue
+        #hue.switch_colour(0.25, 0.25)        
+        #hue.flash_lights(3)
     else:
         print('no light selected')
