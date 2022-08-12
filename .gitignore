@@ -1,5 +1,6 @@
 secrets.py
 credentials.json
+*.json
 **/__pycache__/*
 .vscode/*
 token.pickle

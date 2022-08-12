@@ -5,6 +5,7 @@
 """
 
 from connector.pipelines import gcalendar, hue, schedule_jobs
+import os
 
 def main():
 
@@ -24,4 +25,6 @@ def main():
 
 if __name__ == '__main__':
 
-    main()
+    #main()
+    print(os.getcwd())
+    hue.test_json_save()

@@ -7,27 +7,73 @@ import socket
 import requests
 import json
 import time
+import pprint
+from os.path import exists
 
 from connector.access import secrets
+
+class HueAccess:
+
+    def __init__(self):
+
+        self._get_hue_ip()
+        # authorise api - check whether you get `link button not pressed` or success
+        # (https://developers.meethue.com/develop/hue-api-v2/getting-started/)
+        # if success - store the key in secrets.py
+
+    def _get_hue_ip(self):
+
+        if exists('connector/access/hue_ip.json'):
+                print('ip file exists - use this')
+
+                with open('connector/access/hue_ip.json', 'r') as f:
+                    json_output = json.load(f)
+                f.close()
+
+                bridge_ip = json_output[0]['internalipaddress']
+        else:
+            print('ip file does not exist - run Hue Discovery API')
+
+            bridge_ip_request = requests.get('https://discovery.meethue.com/')
+
+            if bridge_ip_request.status_code == 200:
+
+                bridge_ip_json = json.loads(bridge_ip_request.content)
+                bridge_ip = bridge_ip_json[0]['internalipaddress']
+
+                with open('connector/access/hue_ip.json', 'w') as f:
+                    json.dump(bridge_ip_json, f)
+                f.close()
+            
+            else:
+
+                print('could not access API - exiting')
+                exit()
+        
+        print(bridge_ip)
+        self.bridge_ip = bridge_ip
 
 class HueControl:
 
     def __init__(self, hue_ip=False):
         
         if not hue_ip:
-            self.ip_address = socket.gethostbyname('Philips-hue-LC')
+            print('Hue IP not provided - exiting')
+            exit()
         else:
-            self.ip_address = hue_ip
+            self.hue_ip = hue_ip
 
-        self.hue_user = secrets.hue_user
+        self.hue_user = secrets.username
 
-        lights_request = "http://{}/api/{}/lights".format(self.ip_address, self.hue_user)
-        self.get_lights_response = requests.get(lights_request)
+        lights_request = "https://{}/clip/v2/resource/device".format(self.hue_ip)
+        lights_request_header = {"hue-application-key": self.hue_user}
+        self.get_lights_response = requests.get(lights_request, headers=lights_request_header, verify=False)
 
-        groups_request = "http://{}/api/{}/groups".format(self.ip_address, self.hue_user)
-        self.get_groups_response = requests.get(groups_request)
+        #groups_request = "https://{}/api/{}/groups".format(self.hue_ip, self.hue_user)
+        #self.get_groups_response = requests.get(groups_request)
 
         self.get_lights()
+        #self.show_raw_data('light')
 
     def show_raw_data(self, light_or_group):
 
@@ -36,6 +82,11 @@ class HueControl:
             raw_lights_json = self.get_lights_response.content
             parsed_lights_json = json.loads(raw_lights_json)
             print(json.dumps(parsed_lights_json, indent=2, sort_keys=True))
+
+            # Temp store json data
+            with open('lights_data.json', 'w') as f:
+                json.dump(parsed_lights_json, f)
+            f.close()            
 
         elif light_or_group == 'group':
 
@@ -113,6 +164,10 @@ class HueControl:
         else:
             print("error: select 'light' or 'group'")    
 
+    def store_lights_state(self):
+
+        print('lights store state goes here - for when a user')
+
     def switch_lights(self):
 
         if self.current_lights:
@@ -124,7 +179,7 @@ class HueControl:
 
             lights_id = self.current_lights['id']
 
-            sl_url = "http://{}/api/{}/{}/{}/{}".format(self.ip_address, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
+            sl_url = "http://{}/api/{}/{}/{}/{}".format(self.hue_ip, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
             sl_body = '{"on":' + sl_command + '}'
             
             sl_response = requests.put(sl_url,
@@ -144,7 +199,7 @@ class HueControl:
         if self.current_lights:
 
             lights_id = self.current_lights['id']
-            lc_url = "http://{}/api/{}/{}/{}/{}".format(self.ip_address, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
+            lc_url = "http://{}/api/{}/{}/{}/{}".format(self.hue_ip, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
             lc_body = '{"xy":[' + str(x) + ',' + str(y) + ']}'
             
             lc_response = requests.put(lc_url,
@@ -167,7 +222,7 @@ class HueControl:
             for i in range(number_iterations):
 
                 lights_id = self.current_lights['id']
-                sl_url = "http://{}/api/{}/{}/{}/{}".format(self.ip_address, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
+                sl_url = "http://{}/api/{}/{}/{}/{}".format(self.hue_ip, self.hue_user, self.light_or_group_url, lights_id, self.state_action_req)
                 sl_body = '{"on":' + sl_command + '}'
 
                 sl_response = requests.put(sl_url,
@@ -185,9 +240,9 @@ class HueControl:
 
         print('meeting start combo functionality goes here')
 
-
 if __name__ == '__main__':
 
+    """
     hue = HueControl()
     hue.get_lights()
     lights_selected = hue.select_lights('Study light','light')
@@ -202,3 +257,24 @@ if __name__ == '__main__':
         #hue.flash_lights(3)
     else:
         print('no light selected')
+    """
+
+    #hue_access = HueAccess()
+    #hue = HueControl(hue_access.bridge_ip)
+
+    with open('lights_data.json', 'r') as f:
+        json_output = json.load(f)
+    f.close()
+
+    target_bulb_name = 'Study Desk'
+    
+    device_list = json_output['data']
+    for d in device_list:
+        if d['metadata']['name'] == target_bulb_name:
+            found_device = d
+            found_rid_list = d['services']
+    
+    for r in found_rid_list:
+        if r['rtype'] == 'light':
+            found_rid_light_control = r['rid']
+            
