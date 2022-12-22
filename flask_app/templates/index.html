@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Welcome to FlaskBlog {% endblock %}</h1>
+    <a href="/refresh_calendar">
+        <input type="button" value="call_flask_function">
+    </a>
+    <p>test</p>
+    <p>{{ current_time }}</p>
+    <p>{{ schedule }}</p>
+    <p>{{ hue_devices }}</p>
+{% endblock %}

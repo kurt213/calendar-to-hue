@@ -4,4 +4,5 @@ credentials.json
 **/__pycache__/*
 .vscode/*
 token.pickle
+token_archive.pickle
 .DS_Store

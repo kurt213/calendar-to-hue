@@ -5,6 +5,7 @@
 """
 
 from connector.pipelines import gcalendar, hue, schedule_jobs
+from flask_app.app import app
 import os
 
 def main():
@@ -26,5 +27,4 @@ def main():
 if __name__ == '__main__':
 
     #main()
-    print(os.getcwd())
-    hue.test_json_save()
+    app.run('127.0.0.1', port=5001, debug=True)
