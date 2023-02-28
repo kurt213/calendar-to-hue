@@ -3,6 +3,6 @@ credentials.json
 *.json
 **/__pycache__/*
 .vscode/*
-token.pickle
+*token.pickle
 token_archive.pickle
 .DS_Store

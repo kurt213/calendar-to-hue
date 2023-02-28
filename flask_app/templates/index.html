@@ -1,12 +1,36 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>{% block title %} Welcome to FlaskBlog {% endblock %}</h1>
-    <a href="/refresh_calendar">
-        <input type="button" value="call_flask_function">
-    </a>
-    <p>test</p>
+    <h1>{% block title %} Google Calendar & Hue Lights App {% endblock %}</h1>
+    <h2>Current Time</h2>
     <p>{{ current_time }}</p>
-    <p>{{ schedule }}</p>
+    <h2>Calendar Schedule</h2>
+    {% if calendar_schedule %}
+    <ul>
+        {% for cal in calendar_schedule %}
+          <li>{{ cal }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No events found in calendar</p>
+    {% endif %}
+    <h2>Trigger Events</h2>
+    {% if event_schedule %}
+    <ul>
+        {% for event in event_schedule %}
+            <li>{{ event }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No trigger events</p>
+    {% endif %}
+    <h2>Hue Devices On Network</h2>
+    {% if hue_devices %}
     <p>{{ hue_devices }}</p>
+    {% else %}
+    <p>No Hue devices found on network</p>
+    {% endif %}
+    <a href="/">
+        <input type="button" value="Refresh Triggers">
+    </a>
 {% endblock %}

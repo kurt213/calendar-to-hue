@@ -4,6 +4,10 @@ h1 {
     padding: 10px;
 }
 
+h2 {
+    color: lightslategray;
+}
+
 p {
-    color: grey
+    color: grey;
 }

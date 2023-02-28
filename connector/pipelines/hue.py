@@ -10,8 +10,6 @@ import time
 from os.path import exists
 import random
 
-from connector.access import secrets
-
 class HueAccess:
 
     def __init__(self):
@@ -47,7 +45,7 @@ class HueAccess:
 
                 return json_output[0]['internalipaddress']
         else:
-            print('ip file does not exist - should run Hue Discovery API')
+            # print('ip file does not exist - should run Hue Discovery API')
             exit()
 
     def _save_hue_ip_json(self, bridge_json):
@@ -59,15 +57,15 @@ class HueAccess:
     def _check_hue_ip(self):
 
         if exists('connector/access/hue_ip.json'):
-            print('ip file exists - use this')
+            # print('ip file exists - use this')
             bridge_ip = self._get_hue_json_ip()
 
         else:
-            print('ip file does not exist - run Hue Discovery API')
+            # print('ip file does not exist - run Hue Discovery API')
             bridge_ip, bridge_ip_json = self._get_hue_ip()
             self._save_hue_ip_json(bridge_ip_json)
         
-        print(bridge_ip)
+        # print(bridge_ip)
         self.bridge_ip = bridge_ip
         
     def test_hue_ip(self):
@@ -98,14 +96,26 @@ class HueControl:
         else:
             self.hue_ip = hue_ip
 
-        self.hue_user = secrets.username
-        self.request_header = {"hue-application-key": self.hue_user}
+        if exists('connector/access/hue_secrets.json'):
+            with open('connector/access/hue_secrets.json', 'r') as f:
+                json_output = json.load(f)
+                self.hue_app_key = json_output['hue_app_key']
+                self.request_header = {"hue-application-key": self.hue_app_key}
+            f.close()
 
-        devices_request = "https://{}/clip/v2/resource/device".format(self.hue_ip)
-        self.get_devices_response = requests.get(devices_request, headers=self.request_header, verify=False)
+        try:
 
-        rooms_request = "https://{}/clip/v2/resource/room".format(self.hue_ip)
-        self.get_rooms_response = requests.get(rooms_request, headers=self.request_header, verify=False)
+            devices_request = "https://{}/clip/v2/resource/device".format(self.hue_ip)
+            self.get_devices_response = requests.get(devices_request, headers=self.request_header, verify=False, timeout=1.000)
+
+            rooms_request = "https://{}/clip/v2/resource/room".format(self.hue_ip)
+            self.get_rooms_response = requests.get(rooms_request, headers=self.request_header, verify=False, timeout=1.000)
+
+        except requests.exceptions.Timeout as e:
+
+            # print(e)
+            self.get_devices_response = None
+            self.get_rooms_response = None
 
     def show_raw_data(self, device_or_room):
 
@@ -146,20 +156,21 @@ class HueControl:
         output_list = []
 
         for item in json_content:
-            if 'lights' in item['id_v1'] or 'room' in item['type']:
-                item_name = item['metadata']['name']
-                rid_list = item['services']
-                
-                for r in rid_list:
-                    if 'light' in r['rtype']:
-                        d_id = r['rid']    
+            if 'id_v1' in item:
+                if 'lights' in item['id_v1'] or 'room' in item['type']:
+                    item_name = item['metadata']['name']
+                    rid_list = item['services']
+                    
+                    for r in rid_list:
+                        if 'light' in r['rtype']:
+                            d_id = r['rid']    
 
-                items_dict = {
-                    'rid': d_id,
-                    'name': item_name,
-                    'type': type
-                }
-                output_list.append(items_dict)
+                    items_dict = {
+                        'rid': d_id,
+                        'name': item_name,
+                        'type': type
+                    }
+                    output_list.append(items_dict)
         
         return output_list
 
@@ -293,15 +304,15 @@ if __name__ == '__main__':
 
     hue_access = HueAccess()
 
-    #hue = HueControl(hue_access.bridge_ip)
-    #devices_list = hue.get_device_lists()
-    #hue.get_device_status('Study Lamp')
-    #hue.get_device_status('Upstairs Office')
-    #hue.switch_lights('Study Lamp')
+    print(hue_access.bridge_ip)
+    hue = HueControl(hue_access.bridge_ip)
+    devices_list = hue.get_device_lists()
+    hue.get_device_status('Study Lamp')
+    hue.get_device_status('Upstairs Office')
+    hue.switch_lights('Study Lamp')
 
     #x = random.uniform(0.0001, 1.0000)
     #y = random.uniform(0.0001, 1.0000)
     #brightness = random.uniform(100, 100)
     #hue.switch_colour_brightness('Landing', x, y, brightness)
-    #hue.flash_lights('Landing', 5)
-    
+    #hue.flash_lights('Study Lamp', 5)
