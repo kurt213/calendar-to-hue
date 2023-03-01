@@ -13,6 +13,11 @@ Connector to enable triggering of Philips Hue bulbs from Google Calendar events
 1. This app will attempt to automatically get the local IP address of your Hue Bridge.
 2. If you have multiple Hue Bridges or the app struggles to get your address, then you can set it manually in xxxxx. There are [guides](https://developers.meethue.com/develop/application-design-guidance/hue-bridge-discovery/) or [this link](https://discovery.meethue.com/) might show it.
 
+### IMPORTANT NOTES
+1. This app will only work if your Hue Bridge is on the same network as your computer
+2. Only tested on Docker Desktop Mac
+3. Make sure Settings => Resources => Proxies => Manual Proxy Configuration is off 
+
 ## To-do 
 - Need to add code for authorising API, if success - store key 
 - Create a DB to store scheduled events
