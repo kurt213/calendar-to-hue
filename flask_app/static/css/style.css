@@ -11,3 +11,7 @@ h2 {
 p {
     color: grey;
 }
+
+table {
+    margin-bottom: 10px;
+}

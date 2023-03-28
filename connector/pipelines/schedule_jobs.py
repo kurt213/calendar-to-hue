@@ -51,7 +51,10 @@ class Schedule:
 
     def add_end_events(self, end_function):
 
-        print('end function here')
+        for i in self.cal_events:
+
+            event_name = self._rename_event(i['event_name'])
+            self.sched.add_job(end_function, 'date', run_date=i['end_time'], name=event_name)
 
     def start_scheduler(self):
 

@@ -6,27 +6,70 @@
     <p>{{ current_time }}</p>
     <h2>Calendar Schedule</h2>
     {% if calendar_schedule %}
-    <ul>
+    <table>
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
         {% for cal in calendar_schedule %}
-          <li>{{ cal }}</li>
+            <tr>
+                <td>{{ cal.event_name }}</td>
+                <td>{{ cal.start_time }}</td>
+                <td>{{ cal.end_time }}</td>
+                <td>{{ cal.status }}</td>
+            </tr>
         {% endfor %}
-    </ul>
+        </tbody>
+    </table>
     {% else %}
     <p>No events found in calendar</p>
     {% endif %}
     <h2>Trigger Events</h2>
     {% if event_schedule %}
-    <ul>
+    <table>
+        <thead>
+            <tr>
+                <th>Event Name</th>
+                <th>Trigger Time</th>
+                <th>Trigger Function</th>
+            </tr>
+        </thead>
+        <tbody>
         {% for event in event_schedule %}
-            <li>{{ event }}</li>
+            <tr>
+                <td>{{ event.job_name }}</td>
+                <td>{{ event.trigger_time }}</td>
+                <td>{{ event.trigger_function }}</td>
+            </tr>
         {% endfor %}
-    </ul>
+        </tbody>
+    </table>
     {% else %}
     <p>No trigger events</p>
     {% endif %}
     <h2>Hue Devices On Network</h2>
     {% if hue_devices %}
-    <p>{{ hue_devices }}</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Device Name</th>
+                <th>Device Type</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for device in hue_devices %}
+            <tr>
+                <td>{{ device.name }}</td>
+                <td>{{ device.type }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
     {% else %}
     <p>No Hue devices found on network</p>
     {% endif %}

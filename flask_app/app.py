@@ -15,15 +15,15 @@ def index():
     current_time = datetime.datetime.now()
     calendar_schedule = get_calendar_schedule(html_flag)
     hue_devices = get_hue_status(html_flag)
+    trigger_events = get_event_schedule(html_flag, calendar_schedule)
+    #session['event_schedule'] = get_event_schedule(html_flag, calendar_schedule)
 
-    if 'event_schedule' not in session:
-        session['event_schedule'] = get_event_schedule(html_flag, calendar_schedule)
 
     return render_template(
         'index.html', 
         current_time=current_time,
         calendar_schedule=calendar_schedule,
-        event_schedule=session['event_schedule'],
+        event_schedule=trigger_events,
         hue_devices=hue_devices)
 
 @app.route('/calendar', methods=['GET'])
@@ -62,6 +62,7 @@ def get_event_schedule(html_flag=False, gcalendar_events=False):
 
     sched = schedule_jobs.Schedule(gcalendar_events)
     sched.add_start_events(test_event)
+    sched.add_end_events(test_event)
     sched.start_scheduler()
     
     return sched.current_jobs()
